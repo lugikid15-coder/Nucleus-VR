@@ -1,0 +1,12 @@
+{
+  "name": "NucleusVR.Runtime",
+  "rootNamespace": "NucleusVR",
+  "references": [
+    "Unity.InputSystem",
+    "Unity.XR.Management",
+    "Unity.XR.OpenXR",
+    "Unity.Netcode.Runtime",
+    "Unity.Networking.Transport",
+    "UnityEngine.UI"
+  ]
+}

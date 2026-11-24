@@ -1,0 +1,7 @@
+{
+  "name": "NucleusVR.EditMode.Tests",
+  "rootNamespace": "NucleusVR.Tests",
+  "references": ["NucleusVR.Runtime", "Unity.Netcode.Runtime", "Unity.Networking.Transport"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

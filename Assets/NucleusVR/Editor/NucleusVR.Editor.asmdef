@@ -1,0 +1,16 @@
+{
+  "name": "NucleusVR.Editor",
+  "rootNamespace": "NucleusVR.Editor",
+  "references": [
+    "NucleusVR.Runtime",
+    "Unity.RenderPipelines.Core.Runtime",
+    "Unity.RenderPipelines.Universal.Runtime",
+    "Unity.XR.Management",
+    "Unity.XR.Management.Editor",
+    "Unity.XR.OpenXR",
+    "Unity.XR.OpenXR.Editor",
+    "Unity.Netcode.Runtime",
+    "Unity.Networking.Transport"
+  ],
+  "includePlatforms": ["Editor"]
+}
