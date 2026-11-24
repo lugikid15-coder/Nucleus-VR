@@ -9,6 +9,12 @@ A Unity 6 multiplayer VR horror project for Meta Quest 2, 3, and 3S. The current
 3. Open `Assets/NucleusVR/Scenes/Boot/Boot.unity` and enter Play Mode. The scene is included in the project's build scene list.
 4. For Quest, run **Nucleus VR > Configure Project**, switch the Build Profile to Android, then build and install the APK. Setup enables the OpenXR loader, Meta Quest support, both Quest Touch controller profiles, and single-pass instanced rendering. The build checks the required setup.
 
+### Windows Editor startup
+
+Run `Open-NucleusVR.cmd` from the extracted project. It checks the installed Unity Editor's reference files before opening the project. Run `Open-NucleusVR.cmd --check` to check without launching Unity. For an Editor installed outside the default Hub folder, pass its full `Unity.exe` path.
+
+If Unity reports a missing `unity-4.8-api\Facades` folder, reinstall **6000.0.72f1** through **Unity Hub > Installs** or install a fresh copy in a separate folder. Run `Open-NucleusVR.cmd --install` to open the official download page. Unity checks both reference profiles at startup, including when the project's Editor compatibility level is set to .NET Standard. [Unity's startup reference check](https://github.com/Unity-Technologies/UnityCsReference/blob/6000.0.72f1/Editor/Mono/Scripting/ScriptCompilation/LoadingAssemblyDefinition.cs#L89-L99)
+
 ### Calibration bay
 
 - **Quest** — Push against the floor or a wall with your tracked hands. Crouch to reach the floor. Use the right controller's stick to turn and squeeze grip near an equipment case to pick it up.
