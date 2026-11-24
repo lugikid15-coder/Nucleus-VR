@@ -88,12 +88,15 @@ namespace NucleusVR.Tests
         {
             MakeBox("Floor", new Vector3(0, -0.125f, 0), new Vector3(10, 0.25f, 10));
             CreateRig(0.02f);
+            int taps = 0;
+            movement.SurfaceTapped += (_, _, _) => taps++;
             Sample(1.07f, left: new Vector3(-0.23f, -0.19f, 0.30f));
             yield return PhysicsSteps(12);
 
             Assert.That(movement.LeftHandSurface, Is.Null);
             Assert.That(body.position.y, Is.LessThan(0.04f));
             Assert.That(body.linearVelocity.y, Is.EqualTo(0f).Within(0.1f));
+            Assert.That(taps, Is.Zero);
         }
 
         [UnityTest]
@@ -137,6 +140,98 @@ namespace NucleusVR.Tests
 
             Assert.That(body.position.y, Is.GreaterThan(height + 0.05f));
             Assert.That(body.linearVelocity.magnitude, Is.LessThan(5.25f));
+        }
+
+        [UnityTest]
+        public IEnumerator SlickWallLetsHandSlideWhileStillResistingNormalPush()
+        {
+            MakeBox("Floor", new Vector3(0, -0.125f, 0), new Vector3(10, 0.25f, 10));
+            Collider wall = MakeBox("Wall", new Vector3(0, 1.5f, 0.8f), new Vector3(4, 3, 0.08f));
+            CreateRig(0.025f);
+            float rootTravel = 0f;
+            float handTravel = 0f;
+            yield return MeasureDrag();
+            float grippyRoot = rootTravel;
+            float grippyHand = handTravel;
+
+            wall.gameObject.AddComponent<HandSurface>().Configure(1f);
+            movement.ResetTo(Origin + Vector3.up * 0.025f, Quaternion.identity);
+            yield return MeasureDrag();
+
+            Assert.That(grippyRoot, Is.GreaterThan(0.12f));
+            Assert.That(grippyHand, Is.LessThan(0.02f));
+            Assert.That(rootTravel, Is.LessThan(0.065f));
+            Assert.That(handTravel, Is.GreaterThan(0.11f));
+
+            IEnumerator MeasureDrag()
+            {
+                Sample(1.26f, left: new Vector3(-0.25f, 0.89f, 0.34f));
+                yield return PhysicsSteps(6);
+                Sample(1.26f, left: new Vector3(-0.25f, 0.89f, 0.98f));
+                yield return PhysicsSteps(9);
+                Assert.That(movement.LeftHandSurface, Is.SameAs(wall));
+                Assert.That(body.position.z, Is.LessThan(Origin.z - 0.17f));
+
+                float bodyX = body.position.x;
+                float handX = movement.LeftContact.GetComponent<Rigidbody>().position.x;
+                Sample(1.26f, left: new Vector3(-0.08f, 0.89f, 0.98f));
+                yield return PhysicsSteps(8);
+                rootTravel = Mathf.Abs(body.position.x - bodyX);
+                handTravel = Mathf.Abs(movement.LeftContact.GetComponent<Rigidbody>().position.x - handX);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator FullySlickWallLeavesGravityOnAndReleasesAtAnEdge()
+        {
+            Collider wall = MakeBox("Slick panel", new Vector3(-0.25f, 1.7f, 0.8f),
+                new Vector3(0.34f, 3.3f, 0.08f));
+            wall.gameObject.AddComponent<HandSurface>().Configure(1f);
+            CreateRig(1.25f);
+            Sample(1.26f, left: new Vector3(-0.25f, 0.89f, 0.34f));
+            yield return PhysicsSteps(3);
+            Sample(1.26f, left: new Vector3(-0.25f, 0.89f, 0.98f));
+            yield return PhysicsSteps(5);
+
+            Assert.That(movement.LeftHandSurface, Is.SameAs(wall));
+            Assert.That(body.useGravity, Is.True);
+            Assert.That(body.linearVelocity.y, Is.LessThan(-0.5f));
+
+            for (int index = 1; index <= 5; index++)
+            {
+                Sample(1.26f, left: new Vector3(-0.25f + 0.08f * index, 0.89f, 0.98f));
+                yield return PhysicsSteps(1);
+            }
+
+            Assert.That(movement.LeftHandSurface, Is.Null);
+            Assert.That(body.linearVelocity.y, Is.LessThan(-0.5f));
+            Assert.That(Mathf.Abs(body.linearVelocity.x), Is.LessThan(2.5f));
+        }
+
+        [UnityTest]
+        public IEnumerator ContactTapReportsNewImpactOnly()
+        {
+            MakeBox("Floor", new Vector3(0, -0.125f, 0), new Vector3(10, 0.25f, 10));
+            Collider wall = MakeBox("Wall", new Vector3(0, 1.5f, 0.8f), new Vector3(4, 3, 0.08f));
+            CreateRig(0.025f);
+            var tapped = new List<(Collider collider, Vector3 point, float strength)>();
+            movement.SurfaceTapped += (collider, point, strength) => tapped.Add((collider, point, strength));
+            Sample(1.26f, left: new Vector3(-0.25f, 0.89f, 0.34f));
+            yield return PhysicsSteps(5);
+            Assert.That(tapped, Is.Empty);
+
+            Sample(1.26f, left: new Vector3(-0.25f, 0.89f, 0.98f));
+            yield return PhysicsSteps(18);
+            Assert.That(tapped, Has.Count.EqualTo(1));
+            Assert.That(tapped[0].collider, Is.SameAs(wall));
+            Assert.That(tapped[0].point.z, Is.EqualTo(Origin.z + 0.76f).Within(0.02f));
+            Assert.That(tapped[0].strength, Is.InRange(0.01f, 1f));
+
+            Sample(1.26f, left: new Vector3(-0.25f, 0.89f, 0.30f));
+            yield return PhysicsSteps(5);
+            Sample(1.26f, left: new Vector3(-0.25f, 0.89f, 1.05f));
+            yield return PhysicsSteps(8);
+            Assert.That(tapped, Has.Count.EqualTo(2));
         }
 
         [UnityTest]

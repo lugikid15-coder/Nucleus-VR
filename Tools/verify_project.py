@@ -119,7 +119,10 @@ def check_build_settings(documents, guid_to_path, errors):
 
     tags = documents.get(SETTINGS / "TagManager.asset", "")
     layer_list = tags.partition("  layers:\n")[2].partition("  m_SortingLayers:")[0]
-    layers = [line.strip().removeprefix("-").strip() for line in layer_list.splitlines()]
+    layer_entries = layer_list.splitlines()
+    if any(not line.startswith("  - ") for line in layer_entries):
+        errors.append('TagManager layer entries need a space after the dash. Use - "" for empty slots.')
+    layers = [line[4:].strip() for line in layer_entries]
     if len(layers) != 32 or layers[8:12] != ["NucleusCourse", "NucleusPlayer", "NucleusHands", "NucleusProps"]:
         errors.append("TagManager layers 8–11 do not match CalibrationLayers.")
 

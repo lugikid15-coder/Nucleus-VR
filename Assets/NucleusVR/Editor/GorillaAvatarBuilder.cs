@@ -28,7 +28,7 @@ namespace NucleusVR.Editor
             model.Body.sharedMaterial = material;
             model.Arms.sharedMaterial = material;
             model.Body.sharedMesh = Persist(model.Body.sharedMesh, $"{Models}/ContainmentSubjectBody.asset");
-            model.Arms.sharedMesh = Persist(model.Arms.sharedMesh, $"{Models}/ContainmentSubjectArms.asset");
+            model.Arms.sharedMesh = Persist(model.Arms.sharedMesh, $"{Models}/ContainmentSubjectArmsWithThumbs.asset");
         }
 
         private static T Persist<T>(T generated, string path) where T : Object

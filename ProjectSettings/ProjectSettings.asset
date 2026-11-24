@@ -13,12 +13,12 @@ PlayerSettings:
   m_ActiveColorSpace: 1
   m_MTRendering: 1
   runInBackground: 1
-  bundleVersion: 0.1.0
+  bundleVersion: 0.1.1
   applicationIdentifier:
     Android: com.nucleusvr.nucleus
     Standalone: com.nucleusvr.nucleus
   overrideDefaultApplicationIdentifier: 1
-  AndroidBundleVersionCode: 1
+  AndroidBundleVersionCode: 2
   AndroidMinSdkVersion: 29
   AndroidTargetSdkVersion: 0
   AndroidPreferredInstallLocation: 1
@@ -35,5 +35,6 @@ PlayerSettings:
   scriptingBackend:
     Android: 1
   gcIncremental: 1
+  editorAssembliesCompatibilityLevel: 3
   apiCompatibilityLevel: 6
   activeInputHandler: 1

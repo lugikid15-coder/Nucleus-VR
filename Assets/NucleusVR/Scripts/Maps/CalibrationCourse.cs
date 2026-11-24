@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using NucleusVR.Core;
+using NucleusVR.Movement;
 using NucleusVR.Props;
 
 namespace NucleusVR.Maps
@@ -80,6 +81,7 @@ namespace NucleusVR.Maps
             ResetPad = AddPad("RESET", new Vector3(-7.18f, 1.12f, -4.45f), mint).transform;
             SmoothTurnPad = AddPad("SNAP / SMOOTH", new Vector3(-5.32f, 1.12f, -4.45f), mint).transform;
             MarkRoute(new Vector3(-4.6f, 0.012f, -5.5f), new Vector3(-1.7f, 0.012f, -1.8f), gold);
+            AddTractionBenches(litTemplate);
 
             // Offset barriers leave several ways to reach the first checkpoint.
             Block("Low barrier", new Vector3(-3.15f, 0.4f, -2.6f), new Vector3(2.5f, 0.8f, 0.4f), copper);
@@ -139,6 +141,26 @@ namespace NucleusVR.Maps
                 body.linearVelocity = Vector3.zero;
                 body.angularVelocity = Vector3.zero;
             }
+        }
+
+        private void AddTractionBenches(Material litTemplate)
+        {
+            Material polished = Finish(litTemplate, "Polished traction plate", new Color32(107, 181, 202, 255));
+            polished.SetFloat("_Smoothness", 0.7f);
+            AddTractionBench("GRIP", -3.3f, plating);
+            GameObject slip = AddTractionBench("SLIP", -1.75f, polished);
+            slip.AddComponent<HandSurface>().Configure(1f);
+        }
+
+        private GameObject AddTractionBench(string label, float x, Material finish)
+        {
+            const float z = -5.65f;
+            Block(label + " plinth", new Vector3(x, 0.35f, z), new Vector3(0.92f, 0.7f, 0.78f), steel);
+            GameObject plate = Block(label + " traction plate", new Vector3(x, 0.76f, z),
+                new Vector3(1.25f, 0.12f, 1.1f), finish);
+            Block(label + " sign", new Vector3(x, 0.98f, z + 0.48f), new Vector3(1.08f, 0.32f, 0.055f), steel);
+            Label(label, new Vector3(x, 0.98f, z + 0.445f), 0.11f, Color.white);
+            return plate;
         }
 
         private void AddStation(int index, string text, Vector3 position)

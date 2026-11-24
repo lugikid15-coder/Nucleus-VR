@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Linq;
+using NucleusVR.Audio;
 using NucleusVR.Core;
 using NucleusVR.Maps;
 using NucleusVR.Movement;
@@ -42,7 +43,9 @@ namespace NucleusVR.Tests
             Assert.That(rig.GetComponent<CapsuleCollider>().direction, Is.EqualTo(1));
             Assert.That(motor.LeftContact.GetComponent<Rigidbody>().isKinematic, Is.True);
             Assert.That(motor.RightContact.GetComponent<SphereCollider>().isTrigger, Is.False);
-            Assert.That(avatar.HasModel, Is.True);
+            Assert.That(avatar.GetComponentsInChildren<SkinnedMeshRenderer>().Length, Is.EqualTo(2));
+            Assert.That(course.GetComponentInChildren<HandSurface>().Slip, Is.EqualTo(1f));
+            Assert.That(boot.GetComponent<HandContactAudio>(), Is.Not.Null);
             Assert.That(session, Is.Not.Null);
             Assert.That(session.IsSessionActive, Is.False);
 

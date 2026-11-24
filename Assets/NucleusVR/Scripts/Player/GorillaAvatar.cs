@@ -22,6 +22,8 @@ namespace NucleusVR.Player
             public Transform Wrist;
             public Transform[] Knuckles;
             public Transform[] MiddleJoints;
+            public Transform ThumbBase;
+            public Transform ThumbJoint;
 
             public void Pose(Vector3 handPosition, Quaternion handRotation, Quaternion bodyRotation,
                 float side, float grip)
@@ -47,11 +49,20 @@ namespace NucleusVR.Player
                 ForearmSkin.localScale = new Vector3(1f, 1f,
                     Vector3.Distance(elbowPosition, handPosition) / ForearmLength);
 
+                float center = (Knuckles.Length - 1) * 0.5f;
+                float spreadPerFinger = ThumbBase == null ? 11f : side * 14f;
                 for (int finger = 0; finger < Knuckles.Length; finger++)
                 {
-                    float spread = (finger - 1) * 11f * (1f - grip * 0.75f);
+                    float spread = (finger - center) * spreadPerFinger * (1f - grip * 0.75f);
                     Knuckles[finger].localRotation = Quaternion.Euler(8f + 63f * grip, spread, 0f);
                     MiddleJoints[finger].localRotation = Quaternion.Euler(9f + 77f * grip, 0f, 0f);
+                }
+
+                if (ThumbBase != null && ThumbJoint != null)
+                {
+                    // Rotate across the palm as the two fingers curl.
+                    ThumbBase.localRotation = Quaternion.Euler(18f + 34f * grip, -side * (55f - 74f * grip), 0f);
+                    ThumbJoint.localRotation = Quaternion.Euler(8f + 40f * grip, 0f, 0f);
                 }
             }
 

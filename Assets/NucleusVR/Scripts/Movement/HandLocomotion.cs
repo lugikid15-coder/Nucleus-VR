@@ -1,3 +1,4 @@
+using System;
 using NucleusVR.VR;
 using UnityEngine;
 
@@ -30,7 +31,7 @@ namespace NucleusVR.Movement
         private Rigidbody body;
         private HandContact left, right;
         private LocomotionCollisionQueries queries;
-        private bool turnHeld, leftSupported, rightSupported, recordedHead;
+        private bool turnHeld, leftSupported, rightSupported, supportedWeight, recordedHead;
         private Vector3 previousPhysicsPosition, recentVelocity, previousHeadLocal;
         private Vector3 trackingCorrection;
 
@@ -39,6 +40,7 @@ namespace NucleusVR.Movement
         public Collider LeftHandSurface => left?.Anchor;
         public Collider RightHandSurface => right?.Anchor;
         public float HeadObstructionMetres => trackingCorrection.magnitude;
+        public event Action<Collider, Vector3, float> SurfaceTapped;
 
         public void Configure(TrackedRig trackedRig, CapsuleCollider capsule, Transform physicalLeft,
             Transform physicalRight, LayerMask environmentLayers)
@@ -132,7 +134,7 @@ namespace NucleusVR.Movement
             if (recentered)
                 ResetSupport();
 
-            if (leftSupported || rightSupported)
+            if (supportedWeight)
             {
                 Vector3 measured = (body.position - previousPhysicsPosition) / step;
                 measured = Vector3.ClampMagnitude(measured, maximumReleaseSpeed);
@@ -160,23 +162,47 @@ namespace NucleusVR.Movement
 
             if (anchors > 0 && !turned && !recentered)
             {
-                body.useGravity = false;
-                Vector3 velocity = (leftDrive + rightDrive) / (step * anchors);
-                body.linearVelocity = Vector3.ClampMagnitude(velocity, maximumDriveSpeed);
+                supportedWeight = left.SupportsWeight || right.SupportsWeight;
+                body.useGravity = !supportedWeight;
+                Vector3 drive = Vector3.ClampMagnitude((leftDrive + rightDrive) / (step * anchors),
+                    maximumDriveSpeed);
+                // A fully slippery wall still resists penetration but cannot hold the player's weight.
+                Vector3 carry = Vector3.zero;
+                if (!supportedWeight)
+                {
+                    recentVelocity = Vector3.zero;
+                    carry = Vector3.up * body.linearVelocity.y;
+                    if (hasLeftAnchor)
+                        carry = Vector3.ProjectOnPlane(carry, left.Normal);
+                    if (hasRightAnchor)
+                        carry = Vector3.ProjectOnPlane(carry, right.Normal);
+                }
+                body.linearVelocity = drive + carry;
+                LimitFallSpeed();
                 leftSupported = hasLeftAnchor;
                 rightSupported = hasRightAnchor;
-                return;
+            }
+            else
+            {
+                body.useGravity = true;
+                bool intentionalRelease = supportedWeight &&
+                    (!leftSupported || rig.LeftHandTracked) && (!rightSupported || rig.RightHandTracked);
+                if (intentionalRelease)
+                    body.linearVelocity = Vector3.ClampMagnitude(recentVelocity, maximumReleaseSpeed);
+                else
+                    LimitFallSpeed();
+                leftSupported = rightSupported = supportedWeight = false;
+                recentVelocity = Vector3.zero;
             }
 
-            body.useGravity = true;
-            bool intentionalRelease = (leftSupported || rightSupported) &&
-                (!leftSupported || rig.LeftHandTracked) && (!rightSupported || rig.RightHandTracked);
-            if (intentionalRelease)
-                body.linearVelocity = Vector3.ClampMagnitude(recentVelocity, maximumReleaseSpeed);
-            else
-                LimitFallSpeed();
-            leftSupported = rightSupported = false;
-            recentVelocity = Vector3.zero;
+            NotifyTap(left.Tap);
+            NotifyTap(right.Tap);
+        }
+
+        private void NotifyTap(HandContact.Impact impact)
+        {
+            if (impact.Collider != null)
+                SurfaceTapped?.Invoke(impact.Collider, impact.Point, impact.Strength);
         }
 
         private Vector3 ResolveHand(HandContact hand, bool tracked, Vector3 worldTrackingPosition, Transform pose,
@@ -316,7 +342,7 @@ namespace NucleusVR.Movement
 
         private void ResetSupport()
         {
-            leftSupported = rightSupported = false;
+            leftSupported = rightSupported = supportedWeight = false;
             recentVelocity = Vector3.zero;
             left?.Reset();
             right?.Reset();

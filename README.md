@@ -14,6 +14,7 @@ A Unity 6 multiplayer VR horror project for Meta Quest 2, 3, and 3S. The current
 - **Quest** — Push against the floor or a wall with your tracked hands. Crouch to reach the floor. Use the right controller's stick to turn and squeeze grip near an equipment case to pick it up.
 - **Desktop** — Select **Enter calibration**. Move the mouse to look, or hold the left or right mouse button and drag that hand. Scroll while dragging to extend its reach. Use **Q / E** to turn, **Ctrl** to crouch, **R** to reset, and **F1** or **Esc** to reopen the controls.
 - Touch **START**, then reach the three checkpoints in order. The active pad is amber and completed pads turn green. The start console also has reset and turning controls.
+- Try the **GRIP** and **SLIP** benches near the start. Press a hand into each plate and drag it sideways to compare the grip. New contacts with solid surfaces play a spatial tap.
 
 ### Direct multiplayer
 

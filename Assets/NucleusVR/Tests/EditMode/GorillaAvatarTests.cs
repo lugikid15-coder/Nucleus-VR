@@ -59,14 +59,28 @@ namespace NucleusVR.Tests
         }
 
         [Test]
-        public void MeshHasThreeArticulatedDigitsPerHandAndOutwardTriangles()
+        public void MeshHasTwoFingersAndAMirroredThumbPerHandWithOutwardTriangles()
         {
             foreach (string side in new[] { "Left", "Right" })
             {
                 Transform wrist = Bone($"{side} Wrist");
                 Assert.That(wrist.childCount, Is.EqualTo(3));
-                for (int index = 0; index < wrist.childCount; index++)
-                    Assert.That(wrist.GetChild(index).childCount, Is.EqualTo(1));
+                for (int index = 1; index <= 2; index++)
+                {
+                    Transform finger = Bone($"{side} Finger {index} Base");
+                    Assert.That(finger.parent, Is.SameAs(wrist));
+                    Assert.That(Bone($"{side} Finger {index} Joint").parent, Is.SameAs(finger));
+                }
+
+                Transform thumb = Bone($"{side} Thumb Base");
+                Transform thumbTip = Bone($"{side} Thumb Joint");
+                Assert.That(thumb.parent, Is.SameAs(wrist));
+                Assert.That(thumbTip.parent, Is.SameAs(thumb));
+                float inward = side == "Left" ? 1f : -1f;
+                Assert.That(inward * thumb.localPosition.x, Is.GreaterThan(0.065f));
+                Assert.That(inward * (thumb.localRotation * Vector3.forward).x, Is.GreaterThan(0.7f));
+                Assert.That(model.Arms.bones, Does.Contain(thumb));
+                Assert.That(model.Arms.bones, Does.Contain(thumbTip));
             }
             Assert.That(Bone("Jaw").parent, Is.SameAs(Bone("Head")));
             ValidateMesh(model.Arms);

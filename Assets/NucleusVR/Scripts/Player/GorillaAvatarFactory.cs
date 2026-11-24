@@ -167,13 +167,13 @@ namespace NucleusVR.Player
             Lobe(skin, wrist, 0f, 0f, 0.044f, 0.080f, 0.043f, 0.088f, Pigment.Ash, 12, 6);
             Lobe(skin, wrist, 0f, -0.027f, 0.047f, 0.067f, 0.022f, 0.069f, Pigment.Slate);
 
-            var knuckles = new Transform[3];
-            var joints = new Transform[3];
+            var knuckles = new Transform[2];
+            var joints = new Transform[2];
             for (int index = 0; index < knuckles.Length; index++)
             {
-                float length = index == 1 ? 0.068f : 0.057f;
+                float length = index == 0 ? 0.062f : 0.070f;
                 knuckles[index] = Child(wrist, $"{side} Finger {index + 1} Base",
-                    new Vector3((index - 1) * 0.052f, -0.001f, 0.093f));
+                    new Vector3(sign * (index * 2 - 1) * 0.027f, -0.001f, 0.098f));
                 joints[index] = Child(knuckles[index], $"{side} Finger {index + 1} Joint",
                     new Vector3(0f, 0f, length));
 
@@ -185,6 +185,13 @@ namespace NucleusVR.Player
                     Pigment.Soot, 6, 4);
             }
 
+            // With the palm facing down, both thumbs sit on the medial side of the wrist.
+            Transform thumbBase = Child(wrist, $"{side} Thumb Base", new Vector3(-sign * 0.071f, -0.011f, 0.043f));
+            Transform thumbJoint = Child(thumbBase, $"{side} Thumb Joint", new Vector3(0f, 0f, 0.054f));
+            Lobe(skin, thumbBase, 0f, 0f, 0.019f, 0.036f, 0.030f, 0.050f, Pigment.Charcoal, 10, 5);
+            Lobe(skin, thumbJoint, 0f, 0f, 0.020f, 0.029f, 0.025f, 0.043f, Pigment.Slate, 8, 4);
+            Lobe(skin, thumbJoint, 0f, 0.016f, 0.042f, 0.016f, 0.012f, 0.016f, Pigment.Soot, 8, 4);
+
             return new GorillaAvatar.Arm
             {
                 Shoulder = shoulder,
@@ -193,7 +200,9 @@ namespace NucleusVR.Player
                 ForearmSkin = forearm,
                 Wrist = wrist,
                 Knuckles = knuckles,
-                MiddleJoints = joints
+                MiddleJoints = joints,
+                ThumbBase = thumbBase,
+                ThumbJoint = thumbJoint
             };
         }
 

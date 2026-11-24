@@ -1,3 +1,4 @@
+using NucleusVR.Audio;
 using NucleusVR.Maps;
 using NucleusVR.Movement;
 using NucleusVR.Multiplayer;
@@ -71,6 +72,7 @@ namespace NucleusVR.Core
             tracking.Configure(head, leftHand, rightHand);
             var motor = player.gameObject.AddComponent<HandLocomotion>();
             motor.Configure(tracking, capsule, leftContact, rightContact, CalibrationLayers.EnvironmentMask);
+            gameObject.AddComponent<HandContactAudio>().Configure(motor);
 
             var avatar = NewChild("Local gorilla", transform).gameObject.AddComponent<GorillaAvatar>();
             GorillaAvatarFactory.Build(avatar, head, leftContact, rightContact, true, courseMaterial.shader);
