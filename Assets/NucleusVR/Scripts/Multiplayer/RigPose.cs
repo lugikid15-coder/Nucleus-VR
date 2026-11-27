@@ -9,7 +9,7 @@ namespace NucleusVR.Multiplayer
         private const int VectorBytes = 3 * sizeof(float);
         private const int RotationBytes = 4 * sizeof(float);
 
-        public const int EncodedSize = sizeof(uint) + sizeof(float) + 4 * VectorBytes + 3 * RotationBytes + 3 * sizeof(byte);
+        public const int EncodedSize = sizeof(uint) + sizeof(float) + 4 * VectorBytes + 3 * RotationBytes + 4 * sizeof(byte);
 
         public uint Sequence;
         public Vector3 Origin;
@@ -23,6 +23,7 @@ namespace NucleusVR.Multiplayer
         public byte LeftGrip;
         public byte RightGrip;
         public byte Jaw;
+        public byte TrackedHands;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -38,6 +39,14 @@ namespace NucleusVR.Multiplayer
             serializer.SerializeValue(ref LeftGrip);
             serializer.SerializeValue(ref RightGrip);
             serializer.SerializeValue(ref Jaw);
+            serializer.SerializeValue(ref TrackedHands);
+        }
+
+        public bool IsHandTracked(bool left) => (TrackedHands & (left ? 1 : 2)) != 0;
+
+        public Vector3 WorldHand(bool left)
+        {
+            return Origin + Quaternion.Euler(0f, Yaw, 0f) * (left ? LeftPosition : RightPosition);
         }
 
         public static bool IsNewer(uint incoming, uint previous)

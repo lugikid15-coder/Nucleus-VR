@@ -15,6 +15,7 @@ namespace NucleusVR.Tests
             original.LeftGrip = 216;
             original.RightGrip = 74;
             original.Jaw = 92;
+            original.TrackedHands = 3;
 
             using var writer = new FastBufferWriter(128, Allocator.Temp);
             writer.WriteNetworkSerializable(original);
@@ -35,6 +36,7 @@ namespace NucleusVR.Tests
             Assert.That(copy.LeftGrip, Is.EqualTo(original.LeftGrip));
             Assert.That(copy.RightGrip, Is.EqualTo(original.RightGrip));
             Assert.That(copy.Jaw, Is.EqualTo(original.Jaw));
+            Assert.That(copy.TrackedHands, Is.EqualTo(original.TrackedHands));
         }
 
         [Test]
@@ -120,6 +122,40 @@ namespace NucleusVR.Tests
             Assert.That(gate.TryAccept(ValidPose(2), 0.9), Is.False);
             Assert.That(gate.TryAccept(ValidPose(2), double.PositiveInfinity), Is.False);
             Assert.That(gate.TryAccept(ValidPose(2), 1.1), Is.True);
+        }
+
+        [Test]
+        public void AuthoritativeWarpWaitsForANewPoseNearItsDestination()
+        {
+            var gate = new RigPoseGate();
+            Assert.That(gate.TryAccept(ValidPose(1), 1.0), Is.True);
+            var destination = new Vector3(220f, 0f, -90f);
+            Assert.That(gate.AuthorizeWarp(destination, 1.05), Is.True);
+            Assert.That(gate.IsAwaitingWarp(1.05), Is.True);
+            Assert.That(gate.TryAccept(ValidPose(2), 1.10), Is.False);
+
+            RigPose arriving = ValidPose(3);
+            arriving.Origin = destination + Vector3.right * 0.6f;
+            Assert.That(gate.TryAccept(arriving, 1.15), Is.True);
+            Assert.That(gate.IsAwaitingWarp(1.16), Is.False);
+            Assert.That(gate.Latest.Origin, Is.EqualTo(arriving.Origin));
+            Assert.That(gate.TryAccept(ValidPose(4), 1.20), Is.False, "A completed warp also accepted the old origin");
+        }
+
+        [Test]
+        public void ExpiredWarpReturnsToOrdinaryMovementAdmission()
+        {
+            var gate = new RigPoseGate();
+            Assert.That(gate.TryAccept(ValidPose(1), 1.0), Is.True);
+            var destination = new Vector3(240f, 0f, 90f);
+            Assert.That(gate.AuthorizeWarp(new Vector3(float.NaN, 0f, 0f), 1.04), Is.False);
+            Assert.That(gate.AuthorizeWarp(destination, 1.05), Is.True);
+            Assert.That(gate.IsAwaitingWarp(11.06), Is.False);
+
+            RigPose arriving = ValidPose(2);
+            arriving.Origin = destination;
+            Assert.That(gate.TryAccept(arriving, 11.10), Is.False);
+            Assert.That(gate.TryAccept(ValidPose(3), 11.15), Is.True);
         }
 
         private static RigPose ValidPose(uint sequence)

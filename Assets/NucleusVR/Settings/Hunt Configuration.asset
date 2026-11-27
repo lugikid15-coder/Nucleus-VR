@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6488e1a2de9053aa8c17ac4a382cf818, type: 3}
+  m_Name: Hunt Configuration
+  m_EditorClassIdentifier:
+  minimumPlayers: 2
+  voteSeconds: 15
+  roundSeconds: 180
+  resultsSeconds: 10
+  maps:
+  - map: 0
+    instructions: Restore the three electrical panels. Either exit opens.
+    eventInterval: 53
+    eventLength: 7
+  - map: 1
+    instructions: Restore power and start the evacuation system.
+    eventInterval: 47
+    eventLength: 6
+  - map: 2
+    instructions: Repair the lift systems and reach an extraction point.
+    eventInterval: 57
+    eventLength: 8

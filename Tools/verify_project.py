@@ -123,8 +123,10 @@ def check_build_settings(documents, guid_to_path, errors):
     if any(not line.startswith("  - ") for line in layer_entries):
         errors.append('TagManager layer entries need a space after the dash. Use - "" for empty slots.')
     layers = [line[4:].strip() for line in layer_entries]
-    if len(layers) != 32 or layers[8:12] != ["NucleusCourse", "NucleusPlayer", "NucleusHands", "NucleusProps"]:
-        errors.append("TagManager layers 8–11 do not match CalibrationLayers.")
+    if len(layers) != 32 or layers[8:13] != [
+        "NucleusCourse", "NucleusPlayer", "NucleusHands", "NucleusProps", "NucleusAnatomy"
+    ]:
+        errors.append("TagManager layers 8–12 do not match CalibrationLayers.")
 
 
 def main():

@@ -24,7 +24,8 @@ MonoBehaviour:
   m_RenderScale: 1
   m_MainLightRenderingMode: 1
   m_MainLightShadowsSupported: 0
-  m_AdditionalLightsRenderingMode: 0
+  m_AdditionalLightsRenderingMode: 2
+  m_AdditionalLightsPerObjectLimit: 2
   m_AdditionalLightShadowsSupported: 0
   m_ShadowDistance: 18
   m_UseSRPBatcher: 1

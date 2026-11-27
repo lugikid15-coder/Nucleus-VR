@@ -76,6 +76,7 @@ MonoBehaviour:
   courseMaterial: {fileID: 2100000, guid: be985fea349252b79190cbacaa9dadf0, type: 2}
   signalMaterial: {fileID: 2100000, guid: b9996d6241865613a1e6e61581756119, type: 2}
   networkPlayerPrefab: {fileID: 7770101, guid: bd980495f7ba5c978b673a3ef944dfd2, type: 3}
+  huntConfiguration: {fileID: 11400000, guid: e502a19e383855f28ee7bd97d67e2e91, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

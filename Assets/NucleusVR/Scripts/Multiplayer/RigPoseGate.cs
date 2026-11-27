@@ -16,14 +16,31 @@ namespace NucleusVR.Multiplayer
         private const float OriginBurst = 2.5f;
         private const float SamplesPerSecond = 30f;
         private const float SampleBurst = 4f;
+        private const float WarpRadius = 0.85f;
+        private const double WarpWindow = 10;
 
         private double lastTime;
         private double lastAcceptedTime;
         private double sampleBudget = SampleBurst;
         private double originBudget = OriginBurst;
+        private double warpExpires = double.NegativeInfinity;
+        private Vector3 warpDestination;
 
         public bool HasPose { get; private set; }
         public RigPose Latest { get; private set; }
+        public double LastAcceptedTime => lastAcceptedTime;
+
+        public bool IsAwaitingWarp(double serverTime) => serverTime <= warpExpires;
+
+        public bool AuthorizeWarp(Vector3 destination, double serverTime)
+        {
+            if (!double.IsFinite(serverTime) || serverTime < lastTime || !IsWithin(destination, MaxWorldAxis))
+                return false;
+
+            warpDestination = destination;
+            warpExpires = serverTime + WarpWindow;
+            return true;
+        }
 
         public bool TryAccept(RigPose pose, double serverTime)
         {
@@ -42,7 +59,15 @@ namespace NucleusVR.Multiplayer
             if ((HasPose && !RigPose.IsNewer(pose.Sequence, Latest.Sequence)) || !HasValidGeometry(pose))
                 return false;
 
-            if (HasPose)
+            if (IsAwaitingWarp(serverTime))
+            {
+                if (Vector3.Distance(warpDestination, pose.Origin) > WarpRadius)
+                    return false;
+
+                warpExpires = double.NegativeInfinity;
+                originBudget = OriginBurst;
+            }
+            else if (HasPose)
             {
                 float distance = Vector3.Distance(pose.Origin, Latest.Origin);
                 double gap = serverTime - lastAcceptedTime;
@@ -69,7 +94,8 @@ namespace NucleusVR.Multiplayer
 
         private static bool HasValidGeometry(RigPose pose)
         {
-            return IsWithin(pose.Origin, MaxWorldAxis) &&
+            return (pose.TrackedHands & ~3) == 0 &&
+                   IsWithin(pose.Origin, MaxWorldAxis) &&
                    float.IsFinite(pose.Yaw) && pose.Yaw >= 0f && pose.Yaw <= 360f &&
                    IsWithin(pose.HeadPosition, MaxRoomOffset) &&
                    pose.HeadPosition.y >= -0.6f && pose.HeadPosition.y <= 3f &&

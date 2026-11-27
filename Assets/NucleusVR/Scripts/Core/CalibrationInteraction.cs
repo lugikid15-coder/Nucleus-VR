@@ -1,4 +1,5 @@
 using System;
+using NucleusVR.Gameplay;
 using NucleusVR.Maps;
 using NucleusVR.Movement;
 using NucleusVR.Props;
@@ -26,6 +27,7 @@ namespace NucleusVR.Core
 
         public bool SmoothTurn { get; private set; }
         public string Status { get; private set; } = "Touch START to begin";
+        public GameFlow Gameplay { private get; set; }
 
         public void Configure(CalibrationCourse map, HandLocomotion motor, TrackedRig rig, Transform leftContact,
             Transform rightContact, DesktopRigDriver desktopDriver, EquipmentHands equipmentHands)
@@ -59,7 +61,7 @@ namespace NucleusVR.Core
 
         private void LateUpdate()
         {
-            if (run == null)
+            if (run == null || (Gameplay != null && !Gameplay.InCalibration))
                 return;
             if (desktop.ResetPressed)
             {

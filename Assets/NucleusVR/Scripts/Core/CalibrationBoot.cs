@@ -1,4 +1,5 @@
 using NucleusVR.Audio;
+using NucleusVR.Gameplay;
 using NucleusVR.Maps;
 using NucleusVR.Movement;
 using NucleusVR.Multiplayer;
@@ -18,6 +19,7 @@ namespace NucleusVR.Core
         [SerializeField] private Material courseMaterial;
         [SerializeField] private Material signalMaterial;
         [SerializeField] private GameObject networkPlayerPrefab;
+        [SerializeField] private HuntConfiguration huntConfiguration;
 
         private GameObject networkRoot;
         private bool previousHandBodyCollision;
@@ -85,14 +87,26 @@ namespace NucleusVR.Core
             var interaction = gameObject.AddComponent<CalibrationInteraction>();
             interaction.Configure(room, motor, tracking, leftContact, rightContact, desktop, hands);
             DirectSession session = ConfigureNetwork(player, head, leftContact, rightContact);
-
-            var hud = NewChild("Desktop interface", transform).gameObject.AddComponent<CalibrationHud>();
-            hud.Build(desktop, interaction, session);
+            OnlineSession online = null;
             if (session != null)
             {
-                var terminal = NewChild("Direct multiplayer terminal", transform);
-                terminal.position = new Vector3(-8.13f, 1.42f, -4.28f);
-                terminal.gameObject.AddComponent<WorldSessionPanel>().Build(session, desktop, tracking,
+                online = session.gameObject.AddComponent<OnlineSession>();
+                online.Configure(session);
+            }
+
+            var anatomy = NewChild("Anatomy lab", transform).gameObject.AddComponent<AnatomyBay>();
+            anatomy.Build(courseMaterial, signalMaterial, tracking, motor, desktop, session);
+
+            var gameplay = NewChild("Game modes", transform).gameObject.AddComponent<GameFlow>();
+            gameplay.Build(courseMaterial, signalMaterial, tracking, motor, desktop, hands, interaction, session,
+                avatar, room.gameObject, anatomy.gameObject, huntConfiguration);
+            var hud = NewChild("Desktop interface", transform).gameObject.AddComponent<CalibrationHud>();
+            hud.Build(desktop, interaction, online, gameplay);
+            if (online != null)
+            {
+                var terminal = NewChild("Online multiplayer terminal", transform);
+                terminal.SetPositionAndRotation(new Vector3(-8.39f, 1.42f, -5.8f), Quaternion.Euler(0f, -90f, 0f));
+                terminal.gameObject.AddComponent<WorldSessionPanel>().Build(online, desktop, tracking,
                     leftContact, rightContact, courseMaterial, signalMaterial);
             }
         }

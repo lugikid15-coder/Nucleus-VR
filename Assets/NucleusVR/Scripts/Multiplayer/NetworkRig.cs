@@ -26,6 +26,9 @@ namespace NucleusVR.Multiplayer
         private bool hasDisplay;
         private double nextSend;
         private uint sequence;
+        private Vector3 leftVelocity;
+        private Vector3 rightVelocity;
+        internal bool HuntMonster { private get; set; }
 
         public void Configure(
             Transform origin,
@@ -69,8 +72,10 @@ namespace NucleusVR.Multiplayer
             hasDisplay = false;
             nextSend = 0;
             sequence = 0;
+            leftVelocity = rightVelocity = Vector3.zero;
             serverGate = null;
             session = null;
+            HuntMonster = false;
             if (remoteVisualRoot != null)
                 remoteVisualRoot.SetActive(false);
         }
@@ -151,18 +156,73 @@ namespace NucleusVR.Multiplayer
             }
 
             if (avatar != null)
+            {
+                avatar.SetTrackingAvailability(target.IsHandTracked(true), target.IsHandTracked(false));
                 avatar.SetExpression(target.LeftGrip / 255f, target.RightGrip / 255f, target.Jaw / 255f);
+                avatar.SetHuntAppearance(HuntMonster);
+            }
         }
 
         internal bool TryAcceptServerPose(RigPose pose, out RigPose accepted)
         {
             accepted = default;
-            if (serverGate == null || !serverGate.TryAccept(pose, Time.realtimeSinceStartupAsDouble))
+            if (serverGate == null)
+                return false;
+
+            double now = Time.realtimeSinceStartupAsDouble;
+            bool hadPose = serverGate.HasPose && !serverGate.IsAwaitingWarp(now);
+            RigPose prior = serverGate.Latest;
+            double elapsed = now - serverGate.LastAcceptedTime;
+            if (!serverGate.TryAccept(pose, now))
                 return false;
 
             accepted = serverGate.Latest;
+            leftVelocity = TrackVelocity(hadPose, prior, accepted, true, elapsed, leftVelocity);
+            rightVelocity = TrackVelocity(hadPose, prior, accepted, false, elapsed, rightVelocity);
             QueuePose(accepted);
             return true;
+        }
+
+        internal bool TryGetAcceptedHand(bool left, double now, out Vector3 point, out Vector3 velocity)
+        {
+            point = velocity = Vector3.zero;
+            if (!TryGetAcceptedPose(now, out RigPose pose) || !pose.IsHandTracked(left))
+                return false;
+
+            point = pose.WorldHand(left);
+            velocity = left ? leftVelocity : rightVelocity;
+            return true;
+        }
+
+        internal bool TryGetAcceptedPose(double now, out RigPose pose)
+        {
+            pose = default;
+            if (serverGate == null || !serverGate.HasPose || serverGate.IsAwaitingWarp(now) ||
+                now - serverGate.LastAcceptedTime > 0.35)
+                return false;
+
+            pose = serverGate.Latest;
+            return true;
+        }
+
+        internal bool AuthorizeWarp(Vector3 destination, double now)
+        {
+            if (serverGate == null || !serverGate.AuthorizeWarp(destination, now))
+                return false;
+
+            leftVelocity = rightVelocity = Vector3.zero;
+            return true;
+        }
+
+        private static Vector3 TrackVelocity(bool hadPose, RigPose prior, RigPose current,
+            bool left, double elapsed, Vector3 previous)
+        {
+            if (!hadPose || !prior.IsHandTracked(left) || !current.IsHandTracked(left) || elapsed > 0.25)
+                return Vector3.zero;
+
+            float interval = Mathf.Max(0.02f, (float)elapsed);
+            Vector3 measured = (current.WorldHand(left) - prior.WorldHand(left)) / interval;
+            return Vector3.Lerp(previous, Vector3.ClampMagnitude(measured, 8f), 0.55f);
         }
 
         // NGO includes this snapshot with the initial object for late joiners.
@@ -187,6 +247,8 @@ namespace NucleusVR.Multiplayer
             if (IsOwner || (hasTarget && !RigPose.IsNewer(pose.Sequence, target.Sequence)))
                 return;
 
+            if (hasTarget && (target.Origin - pose.Origin).sqrMagnitude > 25f)
+                hasDisplay = false;
             target = pose;
             hasTarget = true;
         }

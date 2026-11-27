@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Linq;
+using System.Reflection;
+using NucleusVR.Anatomy;
 using NucleusVR.Audio;
 using NucleusVR.Core;
 using NucleusVR.Maps;
@@ -48,6 +50,23 @@ namespace NucleusVR.Tests
             Assert.That(boot.GetComponent<HandContactAudio>(), Is.Not.Null);
             Assert.That(session, Is.Not.Null);
             Assert.That(session.IsSessionActive, Is.False);
+            var online = session.GetComponent<OnlineSession>();
+            Assert.That(online, Is.Not.Null);
+            Assert.That(online.Busy, Is.False);
+            Assert.That(online.InRoom, Is.False);
+            Assert.That(online.RoomCode, Is.Null.Or.Empty);
+
+            AnatomyRig[] specimens = boot.GetComponentsInChildren<AnatomyRig>();
+            Assert.That(specimens.Length, Is.EqualTo(2));
+            foreach (AnatomyRig specimen in specimens)
+            {
+                Assert.That(specimen.HasAuthority, Is.True);
+                Assert.That(specimen.TryGetBody(AnatomyRegion.Torso, out Rigidbody torso), Is.True);
+                Assert.That(torso.isKinematic, Is.True);
+                Assert.That(specimen.TryGetOrganBody(OrganKind.Heart, out Rigidbody heart), Is.True);
+                Assert.That(heart.isKinematic, Is.True);
+                Assert.That(heart.GetComponent<Collider>().enabled, Is.False);
+            }
 
             int courseLayer = LayerMask.NameToLayer("NucleusCourse");
             Assert.That(courseLayer, Is.GreaterThanOrEqualTo(0));
@@ -65,6 +84,45 @@ namespace NucleusVR.Tests
 
             // The network manager is a separate root and is destroyed by Bootstrap cleanup.
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator BootCanSwitchBetweenGameplayWorlds()
+        {
+            yield return SceneManager.LoadSceneAsync(ScenePath, LoadSceneMode.Additive);
+            scene = SceneManager.GetSceneByPath(ScenePath);
+            GameObject boot = scene.GetRootGameObjects().Single(root => root.GetComponent<CalibrationBoot>() != null);
+            Transform modes = boot.transform.Find("Game modes");
+            Assert.That(modes, Is.Not.Null);
+            MonoBehaviour flow = modes.GetComponents<MonoBehaviour>().Single();
+            MethodInfo use = flow.GetType().GetMethod("Use", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(use, Is.Not.Null);
+
+            use.Invoke(flow, new object[] { 0UL, (ushort)1 });
+            yield return null;
+            Assert.That(modes.Find("Nucleus research facility").gameObject.activeSelf, Is.True);
+            Assert.That(boot.transform.Find("Calibration bay").gameObject.activeSelf, Is.False);
+
+            use.Invoke(flow, new object[] { 0UL, (ushort)3 });
+            yield return null;
+            Transform workshop = modes.Find("Physics sandbox");
+            Assert.That(workshop.gameObject.activeSelf, Is.True);
+            Assert.That(modes.Find("Nucleus research facility").gameObject.activeSelf, Is.False);
+            Assert.That(workshop.GetComponentsInChildren<AnatomyRig>().Length, Is.EqualTo(1));
+
+            use.Invoke(flow, new object[] { 0UL, (ushort)302 });
+            yield return null;
+            Assert.That(workshop.GetComponentsInChildren<AnatomyRig>().Length, Is.EqualTo(2));
+
+            use.Invoke(flow, new object[] { 0UL, (ushort)2 });
+            yield return null;
+            Assert.That(modes.Find("Monster briefing").gameObject.activeSelf, Is.True);
+            Assert.That(workshop.gameObject.activeSelf, Is.False);
+
+            use.Invoke(flow, new object[] { 0UL, (ushort)4 });
+            yield return null;
+            Assert.That(boot.transform.Find("Calibration bay").gameObject.activeSelf, Is.True);
+            Assert.That(modes.Find("Monster briefing").gameObject.activeSelf, Is.False);
         }
     }
 }

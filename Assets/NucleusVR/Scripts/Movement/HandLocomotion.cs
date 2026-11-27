@@ -34,6 +34,8 @@ namespace NucleusVR.Movement
         private bool turnHeld, leftSupported, rightSupported, supportedWeight, recordedHead;
         private Vector3 previousPhysicsPosition, recentVelocity, previousHeadLocal;
         private Vector3 trackingCorrection;
+        private Vector3? carryTarget;
+        private float roleDrive = 1f;
 
         public Transform LeftContact => leftContact;
         public Transform RightContact => rightContact;
@@ -59,6 +61,16 @@ namespace NucleusVR.Movement
             turnHeld = true;
         }
 
+        internal void SetRoleDrive(float scale) => roleDrive = Mathf.Clamp(scale, 0.65f, 1.35f);
+
+        internal void SetCarryTarget(Vector3? target) => carryTarget = target;
+
+        internal void ApplyGameplayImpulse(Vector3 velocity)
+        {
+            if (body != null)
+                body.AddForce(Vector3.ClampMagnitude(velocity, 4f), ForceMode.VelocityChange);
+        }
+
         public void ResetTo(Vector3 position, Quaternion yaw)
         {
             if (body == null)
@@ -69,6 +81,7 @@ namespace NucleusVR.Movement
             body.angularVelocity = Vector3.zero;
             body.useGravity = true;
             trackingCorrection = Vector3.zero;
+            carryTarget = null;
             rig?.SetCollisionOffset(Vector3.zero);
             ResetSupport();
             turnHeld = false;
@@ -160,12 +173,28 @@ namespace NucleusVR.Movement
             bool hasRightAnchor = right.Anchor != null;
             int anchors = (hasLeftAnchor ? 1 : 0) + (hasRightAnchor ? 1 : 0);
 
+            if (carryTarget.HasValue)
+            {
+                Vector3 pull = carryTarget.Value - body.position;
+                pull.y = 0f;
+                if (pull.sqrMagnitude < 6.25f)
+                {
+                    body.useGravity = true;
+                    Vector3 velocity = Vector3.ClampMagnitude(pull * 3.2f, 2.3f);
+                    velocity.y = body.linearVelocity.y;
+                    body.linearVelocity = Vector3.MoveTowards(body.linearVelocity, velocity, step * 9f);
+                    ResetSupport();
+                    LimitFallSpeed();
+                    return;
+                }
+            }
+
             if (anchors > 0 && !turned && !recentered)
             {
                 supportedWeight = left.SupportsWeight || right.SupportsWeight;
                 body.useGravity = !supportedWeight;
                 Vector3 drive = Vector3.ClampMagnitude((leftDrive + rightDrive) / (step * anchors),
-                    maximumDriveSpeed);
+                    maximumDriveSpeed * roleDrive);
                 // A fully slippery wall still resists penetration but cannot hold the player's weight.
                 Vector3 carry = Vector3.zero;
                 if (!supportedWeight)

@@ -96,6 +96,9 @@ namespace NucleusVR.Player
         private Vector3 desiredExpression;
         private Vector3 expression;
         private UnityEngine.Object[] transientAssets;
+        private MaterialPropertyBlock roleColor;
+        private SkinnedMeshRenderer[] skinRenderers;
+        private bool monsterSkin;
 
         internal bool HasModel => modelRoot != null;
 
@@ -110,6 +113,22 @@ namespace NucleusVR.Player
         {
             if (bodyRenderer != null)
                 bodyRenderer.enabled = !firstPerson;
+        }
+
+        internal void SetHuntAppearance(bool monster)
+        {
+            if (modelRoot == null || monsterSkin == monster)
+                return;
+
+            monsterSkin = monster;
+            skinRenderers ??= modelRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            roleColor ??= new MaterialPropertyBlock();
+            foreach (SkinnedMeshRenderer skin in skinRenderers)
+            {
+                skin.GetPropertyBlock(roleColor);
+                roleColor.SetColor("_BaseColor", monster ? new Color(1.62f, 0.61f, 0.45f) : Color.white);
+                skin.SetPropertyBlock(roleColor);
+            }
         }
 
         public void SetTrackingAvailability(bool left, bool right)
